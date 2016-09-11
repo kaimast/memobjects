@@ -34,6 +34,15 @@ namespace memory
         return reinterpret_cast<T*>(obj);
     }
 
+    
+    template<typename T> requires __is_base_of(memory::object, T)
+    void freeObject(T *obj)
+    {
+        int fd = obj->fd;
+        munmap(obj, obj->size);
+	close(fd);
+    }
+
     template<typename T> requires __is_base_of(memory::object, T)
     T* createObject(const char* name)
     {
@@ -54,55 +63,50 @@ namespace memory
         T *obj = openObject<T>(fd);
         obj->fd = fd;
         obj->size = sizeof(T);
+ 
         sem_init(&obj->sem, 1, 1);
+        sem_init(&obj->condition, 1, 1);
 
         return obj;
     }
 
-    template<typename T> requires __is_base_of(memory::object, T)
-    void freeObject(T *obj)
-    {
-        int fd = obj->fd;
-        munmap(obj, obj->size);
-	close(fd);
-    }
-
-    inline bool lock(int fd, size_t size)
-    {
-        int res = flock(fd, LOCK_EX);
-        return res == 0;
-    }
-
-    inline bool unlock(int fd, size_t size)
-    {
-        int res = flock(fd, LOCK_UN);
-        return res == 0;
-    }
-
     struct object
     {
+    public:
         int fd;
         size_t size;
+        
         sem_t sem;
+        sem_t condition;
+         
+        void wait()
+        {
+            unlock();
+            sem_post(&this->condition);
+            lock();
+        }
+
+        void notify()
+        {
+            int val = -1;
+            sem_getvalue(&this->condition, &val);
+
+            if(val > 0) 
+            {
+                sem_wait(&this->condition);
+            }
+        }
 
         void lock()
         {
-#ifdef USE_SEMAPHORES
             sem_wait(&this->sem);
-#else
-            memory::lock(fd, size);
-#endif
         } 
  
         void unlock()
         {
-#ifdef USE_SEMAPHORES
             sem_post(&this->sem);
-#else
-            memory::unlock(fd, size);
-#endif
         }
+
+        
    };
-
-
 }
