@@ -3,8 +3,6 @@
 #include <chrono>
 #include <mutex> 
 
-constexpr size_t NUM_OBJECTS = 1000 * 1000;
-
 struct foo : public memory::object
 {
    int the_answer;
@@ -33,7 +31,7 @@ int main()
    }
    else if(res > 0)
    {
-       // parent project
+       // parent process
        obj->lock();
        obj->the_answer = 42;
        obj->notify();
