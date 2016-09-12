@@ -7,4 +7,4 @@ set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -g -O0")
 include_directories(.)
 
 add_executable(${PROJECT_NAME}-bench bench/main.cpp)
-add_executable(${PROJECT_NAME}-single-message examples/single-message.cpp)
+add_executable(${PROJECT_NAME}-single-update examples/single-update.cpp)
